@@ -1,0 +1,29 @@
+name: Deploy to Coolify
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Coolify service tag
+        required: true
+        type: string
+    secrets:
+      COOLIFY_URL:
+        required: true
+      COOLIFY_API_TOKEN:
+        required: true
+
+jobs:
+  deploy-coolify:
+    runs-on: [self-hosted]
+    steps:
+      - name: Trigger Coolify deploy
+        env:
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          COOLIFY_TAG: ${{ inputs.tag }}
+        run: |
+          echo "Triggering deployment on Coolify..."
+          curl -fsSL -H "Authorization: Bearer $COOLIFY_TOKEN" \
+            "$COOLIFY_URL/api/v1/deploy?tag=$COOLIFY_TAG"
+          echo "Deployment request sent."
