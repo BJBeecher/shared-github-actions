@@ -1,0 +1,50 @@
+name: Run Migrations
+
+on:
+  workflow_call:
+    inputs:
+      migrations_path:
+        description: Path to the migrations directory
+        required: false
+        default: api/migrations
+        type: string
+      version:
+        description: Optional release version tag to checkout before running migrations
+        required: false
+        default: ""
+        type: string
+    secrets:
+      DATABASE_URL:
+        required: true
+
+jobs:
+  run-migrations:
+    runs-on: [self-hosted, docker]
+    steps:
+      - name: Checkout repo at current ref
+        if: ${{ inputs.version == '' }}
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Checkout repo at release version
+        if: ${{ inputs.version != '' }}
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          ref: refs/tags/${{ inputs.version }}
+
+      - name: Run DB migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MIGRATIONS_PATH: ${{ inputs.migrations_path }}
+        run: |
+          set -euo pipefail
+
+          docker run --rm \
+            --network host \
+            -v "${{ github.workspace }}/${MIGRATIONS_PATH}:/migrations:ro" \
+            migrate/migrate:latest \
+            -path /migrations \
+            -database "${DATABASE_URL}" \
+            up

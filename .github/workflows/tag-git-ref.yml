@@ -1,0 +1,74 @@
+name: Tag Git Ref
+
+on:
+  workflow_call:
+    inputs:
+      source_ref:
+        description: Commit SHA, branch, or tag to tag
+        required: false
+        default: ""
+        type: string
+      immutable_tag:
+        description: Optional immutable tag to create if missing
+        required: false
+        default: ""
+        type: string
+      create_immutable_tag:
+        description: Create immutable_tag when it does not already exist
+        required: false
+        default: false
+        type: boolean
+      mutable_tag:
+        description: Optional mutable tag to force-update
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  tag-ref:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Create requested tags
+        env:
+          SOURCE_REF: ${{ inputs.source_ref }}
+          IMMUTABLE_TAG: ${{ inputs.immutable_tag }}
+          CREATE_IMMUTABLE_TAG: ${{ inputs.create_immutable_tag }}
+          MUTABLE_TAG: ${{ inputs.mutable_tag }}
+        run: |
+          set -euo pipefail
+
+          git fetch --tags origin
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [ -z "${SOURCE_REF}" ]; then
+            SOURCE_REF="${GITHUB_SHA}"
+          fi
+
+          commit_sha="$(git rev-parse "${SOURCE_REF}^{commit}")"
+
+          if [ -n "${IMMUTABLE_TAG}" ]; then
+            if git rev-parse --verify "refs/tags/${IMMUTABLE_TAG}" >/dev/null 2>&1; then
+              tagged_commit="$(git rev-list -n 1 "refs/tags/${IMMUTABLE_TAG}")"
+              if [ "${tagged_commit}" != "${commit_sha}" ]; then
+                echo "Tag ${IMMUTABLE_TAG} already exists on ${tagged_commit}" >&2
+                exit 1
+              fi
+            elif [ "${CREATE_IMMUTABLE_TAG}" = "true" ]; then
+              git tag -a "${IMMUTABLE_TAG}" "${commit_sha}" -m "Release ${IMMUTABLE_TAG}"
+              git push origin "refs/tags/${IMMUTABLE_TAG}"
+            else
+              echo "Tag ${IMMUTABLE_TAG} does not exist" >&2
+              exit 1
+            fi
+          fi
+
+          if [ -n "${MUTABLE_TAG}" ]; then
+            git tag -fa "${MUTABLE_TAG}" "${commit_sha}" -m "${MUTABLE_TAG} ${commit_sha}"
+            git push origin "refs/tags/${MUTABLE_TAG}" --force
+          fi

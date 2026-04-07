@@ -1,0 +1,61 @@
+name: Deploy Release
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: Image/service name suffix
+        required: true
+        type: string
+      environment_tag:
+        description: Mutable environment tag, such as development or production
+        required: true
+        type: string
+      coolify_tag:
+        description: Coolify service tag
+        required: true
+        type: string
+      git_source_ref:
+        description: Optional git ref to resolve before moving the environment tag
+        required: false
+        default: ""
+        type: string
+    secrets:
+      GH_TOKEN:
+        required: true
+      COOLIFY_URL:
+        required: true
+      COOLIFY_API_TOKEN:
+        required: true
+
+jobs:
+  validate-release:
+    uses: ./.github/workflows/validate-release-version.yml
+    with:
+      require_existing_tag: true
+
+  tag-git:
+    needs: validate-release
+    uses: ./.github/workflows/tag-git-ref.yml
+    with:
+      source_ref: ${{ inputs.git_source_ref || format('refs/tags/{0}', needs.validate-release.outputs.version) }}
+      mutable_tag: ${{ inputs.environment_tag }}
+
+  tag-image:
+    needs: tag-git
+    uses: ./.github/workflows/tag-ghcr-image.yml
+    with:
+      service: ${{ inputs.service }}
+      source_tag: ${{ needs.validate-release.outputs.version }}
+      target_tags: ${{ inputs.environment_tag }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  deploy-coolify:
+    needs: tag-image
+    uses: ./.github/workflows/deploy-coolify.yml
+    with:
+      tag: ${{ inputs.coolify_tag }}
+    secrets:
+      COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+      COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}

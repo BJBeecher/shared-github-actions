@@ -1,0 +1,62 @@
+name: Validate Release Version
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Explicit release version to validate
+        required: false
+        default: ""
+        type: string
+      version_file:
+        description: Optional file path to read the release version from
+        required: false
+        default: "VERSION"
+        type: string
+      require_existing_tag:
+        description: Require the validated version to already exist as a git tag
+        required: false
+        default: false
+        type: boolean
+    outputs:
+      version:
+        description: Validated release version
+        value: ${{ jobs.validate.outputs.version }}
+
+jobs:
+  validate:
+    runs-on: self-hosted
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Validate release version
+        id: validate
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_VERSION_FILE: ${{ inputs.version_file }}
+          REQUIRE_EXISTING_TAG: ${{ inputs.require_existing_tag }}
+        run: |
+          set -euo pipefail
+
+          version="${INPUT_VERSION}"
+
+          if [ -z "${version}" ]; then
+            version="$(tr -d '[:space:]' < "${INPUT_VERSION_FILE}")"
+          fi
+
+          if ! printf '%s' "${version}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Release version must look like v1.2.3" >&2
+            exit 1
+          fi
+
+          if [ "${REQUIRE_EXISTING_TAG}" = "true" ]; then
+            git fetch --tags origin
+            git rev-parse --verify "refs/tags/${version}" >/dev/null 2>&1
+          fi
+
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"

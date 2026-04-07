@@ -11,6 +11,11 @@ on:
         description: Image/service name suffix
         required: true
         type: string
+      version:
+        description: Optional additional image tag, such as a release version
+        required: false
+        default: ""
+        type: string
       context:
         description: Docker build context
         required: false
@@ -61,6 +66,19 @@ jobs:
         id: repo
         run: echo "repo=$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
+      - name: Set image tags
+        id: image-tags
+        run: |
+          {
+            echo 'tags<<EOF'
+            echo "ghcr.io/${{ steps.repo.outputs.repo }}/${{ inputs.service }}:latest"
+            echo "ghcr.io/${{ steps.repo.outputs.repo }}/${{ inputs.service }}:${{ github.sha }}"
+            if [ -n "${{ inputs.version }}" ]; then
+              echo "ghcr.io/${{ steps.repo.outputs.repo }}/${{ inputs.service }}:${{ inputs.version }}"
+            fi
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -70,6 +88,4 @@ jobs:
           platforms: ${{ inputs.platforms }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-          tags: |
-            ghcr.io/${{ steps.repo.outputs.repo }}/${{ inputs.service }}:latest
-            ghcr.io/${{ steps.repo.outputs.repo }}/${{ inputs.service }}:${{ github.sha }}
+          tags: ${{ steps.image-tags.outputs.tags }}

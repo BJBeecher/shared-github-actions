@@ -1,0 +1,52 @@
+name: Release Package
+
+on:
+  workflow_call:
+    inputs:
+      dockerfile:
+        description: Path to Dockerfile
+        required: true
+        type: string
+      service:
+        description: Image/service name suffix
+        required: true
+        type: string
+      context:
+        description: Docker build context
+        required: false
+        default: "."
+        type: string
+      platforms:
+        description: Docker target platforms
+        required: false
+        default: linux/amd64
+        type: string
+    secrets:
+      GH_TOKEN:
+        required: true
+      KEYCHAIN_PASSWORD:
+        required: true
+
+jobs:
+  validate-release:
+    uses: ./.github/workflows/validate-release-version.yml
+
+  package-push:
+    needs: validate-release
+    uses: ./.github/workflows/package-push.yml
+    with:
+      dockerfile: ${{ inputs.dockerfile }}
+      service: ${{ inputs.service }}
+      version: ${{ needs.validate-release.outputs.version }}
+      context: ${{ inputs.context }}
+      platforms: ${{ inputs.platforms }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+  tag-release:
+    needs: package-push
+    uses: ./.github/workflows/tag-git-ref.yml
+    with:
+      immutable_tag: ${{ needs.validate-release.outputs.version }}
+      create_immutable_tag: true
