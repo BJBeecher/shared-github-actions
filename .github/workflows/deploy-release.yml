@@ -31,14 +31,12 @@ on:
 jobs:
   validate-release:
     uses: ./.github/workflows/validate-release-version.yml
-    with:
-      require_existing_tag: true
 
   tag-git:
     needs: validate-release
     uses: ./.github/workflows/tag-git-ref.yml
     with:
-      source_ref: ${{ inputs.git_source_ref || format('refs/tags/{0}', needs.validate-release.outputs.version) }}
+      source_ref: ${{ inputs.git_source_ref }}
       mutable_tag: ${{ inputs.environment_tag }}
 
   tag-image:

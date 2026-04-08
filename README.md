@@ -86,6 +86,8 @@ jobs:
       COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
 ```
 
+For production-style promotion where the environment tag must move to a specific release tag, also pass `git_source_ref: refs/tags/v1.2.3`.
+
 ## Publishing checklist
 
 1. Create a new repository named `shared-github-actions`.
