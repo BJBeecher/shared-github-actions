@@ -7,6 +7,11 @@ on:
         description: Image/service name suffix
         required: true
         type: string
+      version:
+        description: Optional release version to deploy; defaults to VERSION
+        required: false
+        default: ""
+        type: string
       environment_tag:
         description: Mutable environment tag, such as development or production
         required: true
@@ -31,6 +36,8 @@ on:
 jobs:
   validate-release:
     uses: ./.github/workflows/validate-release-version.yml
+    with:
+      version: ${{ inputs.version }}
 
   tag-git:
     needs: validate-release

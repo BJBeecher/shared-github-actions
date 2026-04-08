@@ -78,6 +78,7 @@ jobs:
     uses: bjbeecher/shared-github-actions/.github/workflows/deploy-release.yml@v1
     with:
       service: api
+      version: v1.2.3
       environment_tag: development
       coolify_tag: development-albumo-api
     secrets:
@@ -86,7 +87,7 @@ jobs:
       COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
 ```
 
-For production-style promotion where the environment tag must move to a specific release tag, also pass `git_source_ref: refs/tags/v1.2.3`.
+Omit `version` to have the workflow read `VERSION`. For production-style promotion where the environment tag must move to a specific release tag, also pass `git_source_ref: refs/tags/v1.2.3`.
 
 ## Publishing checklist
 
