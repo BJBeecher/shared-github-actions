@@ -45,7 +45,9 @@ jobs:
       KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
 
   tag-release:
-    needs: package-push
+    needs:
+      - validate-release
+      - package-push
     uses: ./.github/workflows/tag-git-ref.yml
     with:
       source_ref: ${{ github.sha }}
