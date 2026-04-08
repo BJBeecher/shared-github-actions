@@ -48,5 +48,6 @@ jobs:
     needs: package-push
     uses: ./.github/workflows/tag-git-ref.yml
     with:
+      source_ref: ${{ github.sha }}
       immutable_tag: ${{ needs.validate-release.outputs.version }}
       create_immutable_tag: true
