@@ -13,6 +13,11 @@ on:
         required: false
         default: ""
         type: string
+      git_ref:
+        description: Optional explicit git ref to checkout before running migrations
+        required: false
+        default: ""
+        type: string
     secrets:
       DATABASE_URL:
         required: true
@@ -22,13 +27,20 @@ jobs:
     runs-on: [self-hosted, docker]
     steps:
       - name: Checkout repo at current ref
-        if: ${{ inputs.version == '' }}
+        if: ${{ inputs.git_ref == '' && inputs.version == '' }}
         uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
+      - name: Checkout repo at explicit git ref
+        if: ${{ inputs.git_ref != '' }}
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+          ref: ${{ inputs.git_ref }}
+
       - name: Checkout repo at release version
-        if: ${{ inputs.version != '' }}
+        if: ${{ inputs.git_ref == '' && inputs.version != '' }}
         uses: actions/checkout@v5
         with:
           fetch-depth: 1

@@ -13,6 +13,11 @@ on:
         required: false
         default: "VERSION"
         type: string
+      required_git_ref:
+        description: Optional git ref that must already exist, such as refs/tags/service/v1.2.3
+        required: false
+        default: ""
+        type: string
       require_existing_tag:
         description: Require the validated version to already exist as a git tag
         required: false
@@ -39,6 +44,7 @@ jobs:
         env:
           INPUT_VERSION: ${{ inputs.version }}
           INPUT_VERSION_FILE: ${{ inputs.version_file }}
+          REQUIRED_GIT_REF: ${{ inputs.required_git_ref }}
           REQUIRE_EXISTING_TAG: ${{ inputs.require_existing_tag }}
         run: |
           set -euo pipefail
@@ -54,9 +60,19 @@ jobs:
             exit 1
           fi
 
+          required_ref="${REQUIRED_GIT_REF}"
+
           if [ "${REQUIRE_EXISTING_TAG}" = "true" ]; then
+            if [ -n "${required_ref}" ]; then
+              echo "required_git_ref and require_existing_tag are mutually exclusive" >&2
+              exit 1
+            fi
+            required_ref="refs/tags/${version}"
+          fi
+
+          if [ -n "${required_ref}" ]; then
             git fetch --tags origin
-            git rev-parse --verify "refs/tags/${version}" >/dev/null 2>&1
+            git rev-parse --verify "${required_ref}" >/dev/null 2>&1
           fi
 
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
