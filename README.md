@@ -13,13 +13,13 @@ Reusable GitHub workflows shared across Albumo projects.
 - `.github/workflows/run-migrations.yml`
   - Runs DB migrations from a shared migration path, optionally checking out a specific release version first.
 - `.github/workflows/tag-git-ref.yml`
-  - Creates immutable git tags and/or force-updates environment tags.
+  - Creates immutable git tags and/or force-updates mutable tags.
 - `.github/workflows/tag-ghcr-image.yml`
   - Copies an existing GHCR image tag to one or more target tags.
 - `.github/workflows/deploy-coolify.yml`
   - Triggers a Coolify deployment for a service tag.
 - `.github/workflows/deploy-release.yml`
-  - Advances mutable environment git/image tags and triggers Coolify.
+  - Advances service-scoped mutable git tags, mutable environment image tags, and triggers Coolify.
 
 ## Usage
 
@@ -88,6 +88,8 @@ jobs:
 ```
 
 Omit `version` to have the workflow read `VERSION`. For production-style promotion where the environment tag must move to a specific release tag, also pass `git_source_ref: refs/tags/v1.2.3`.
+
+`deploy-release.yml` now scopes the mutable Git tag by service as `<service>/<environment_tag>` so multiple services in the same repository do not overwrite each other's `development` or `production` tags. The GHCR image tag remains just `environment_tag` because image tags are already isolated by the per-service image repository path.
 
 ## Publishing checklist
 

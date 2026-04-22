@@ -13,7 +13,7 @@ on:
         default: ""
         type: string
       environment_tag:
-        description: Mutable environment tag, such as development or production
+        description: Mutable environment image tag, such as development or production
         required: true
         type: string
       coolify_tag:
@@ -44,7 +44,7 @@ jobs:
     uses: ./.github/workflows/tag-git-ref.yml
     with:
       source_ref: ${{ inputs.git_source_ref }}
-      mutable_tag: ${{ inputs.environment_tag }}
+      mutable_tag: ${{ format('{0}/{1}', inputs.service, inputs.environment_tag) }}
 
   tag-image:
     needs: tag-git
