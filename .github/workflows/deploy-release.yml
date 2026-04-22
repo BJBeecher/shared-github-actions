@@ -47,7 +47,9 @@ jobs:
       mutable_tag: ${{ format('{0}/{1}', inputs.service, inputs.environment_tag) }}
 
   tag-image:
-    needs: tag-git
+    needs:
+      - validate-release
+      - tag-git
     uses: ./.github/workflows/tag-ghcr-image.yml
     with:
       service: ${{ inputs.service }}
